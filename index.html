@@ -3212,8 +3212,8 @@
 
         // Icon Arrays
         const expenseIcons = ['🛒', '🍔', '🚗', '🏠', '💡', '📱', '👕', '🎬', '💊', '📚', '✈️', '🎮', '🏋️', '💇', '🐕', '🎁', '☕', '🍺', '🎵', '📦', '🛠️', '👶', '📝', '🎓', '💼', '🚕', '⛽', '🏥', '🎭', '🌿', '📺', '🧹', '🔧', '🎯', '⚽', '📷', '🛏️', '💳', '📄', '🎨', '🔌', '🧊', '🍳', '🧺', '🪥', '🧴', '👟', '🎒', '📌', '🔑', '💊'];
-        const incomeIcons = ['💰', '💵', '🏦', '📈', '🎁', '💎', '👨‍👩‍👧', '🏧', '💸', '🎊', '🏆', '🎯', '💼', '📊', '🧾', '🏅', '💳', '📑', '💹', '🔖', '🎐', '🪙', '📥', '💷', '💴', '💶', '📤'];
-        const sourceIcons = ['👩', '👨', '👦', '👧', '👴', '👵', '👨‍👩‍👧', '💼', '👩‍💼', '👨‍💼', '🧑‍🎓', '👩‍🎓', '🧑‍🍳', '👨‍🍳', '👩‍🔧', '👨‍🔧', '👩‍🏫', '👨‍🏫', '👩‍⚕️', '👨‍⚕️', '👩‍✈️', '👨‍✈️', '🧔', '👱', '🦰', '🦱', '🦸', '🦹', '🧙', '🧚', '🧛', '🧜', '🧝', '🧞', '👸', '🤴', '🦁', '🐯', '🦊', '🐻', '🐼', '🐨', '🐰', '🦄', '🐲', '🦋', '🐝', '🐞', '🌸', '🌺', '🌻', '🌹', '🍀'];
+        const incomeIcons = ['💰', '💵', '🏦', '📈', '🎁', '💎', '🏧', '💸', '🎊', '🏆', '🎯', '💼', '📊', '🧾', '🏅', '💳', '📑', '💹', '🔖', '🎐', '🪙', '📥', '💷', '💴', '💶', '📤'];
+        const sourceIcons = ['👩', '👨', '👦', '👧', '👴', '👵', '💼', '👩‍💼', '👨‍💼', '🧑‍🎓', '👩‍🎓', '🧑‍🍳', '👨‍🍳', '👩‍🔧', '👨‍🔧', '👩‍🏫', '👨‍🏫', '👩‍⚕️', '👨‍⚕️', '👩‍✈️', '👨‍✈️', '🧔', '👱', '🦰', '🦱', '🦸', '🦹', '🧙', '🧚', '🧛', '🧜', '🧝', '🧞', '👸', '🤴', '🦁', '🐯', '🦊', '🐻', '🐼', '🐨', '🐰', '🦄', '🐲', '🦋', '🐝', '🐞', '🌸', '🌺', '🌻', '🌹', '🍀'];
         function openSourceModal() { document.getElementById('sourceForm').reset(); currentSourceIcon = '👩'; renderSourceIconSelector(); openModal('sourceModal'); }
         function renderSourceIconSelector() { document.getElementById('sourceIconSelector').innerHTML = sourceIcons.map(icon => `<div class="source-option ${currentSourceIcon === icon ? 'selected' : ''}" onclick="selectSourceIcon('${icon}')" style="font-size: 22px; padding: 10px 12px;">${icon}</div>`).join(''); }
         function selectSourceIcon(icon) { currentSourceIcon = icon; renderSourceIconSelector(); }
@@ -3604,7 +3604,7 @@
         // Wallet Modal
         function openWalletModal() { document.getElementById('newWalletName').value = ''; currentWalletIcon = '📱'; renderWalletIconSelector(); renderWalletList(); openModal('walletModal'); }
         function renderWalletList() { const container = document.getElementById('walletList'); if (data.wallets.length === 0) { container.innerHTML = '<div class="empty-state"><h3>No payment methods</h3></div>'; return; } container.innerHTML = data.wallets.map(wallet => `<div style="display: flex; align-items: center; gap: 15px; padding: 12px; background: var(--light); border-radius: 12px; margin-bottom: 10px;"><span style="font-size: 28px;">${wallet.icon}</span><div style="flex: 1;"><div style="font-weight: 600;">${wallet.name}</div></div><button onclick="deleteWallet(${wallet.id})" style="padding: 8px 12px; background: var(--danger); color: white; border: none; border-radius: 8px; cursor: pointer;">Delete</button></div>`).join(''); }
-        const walletIcons = ['📱', '💳', '🟢', '🔵', '🟡', '🟠', '💰', '💵', '🪙', '🏦', '🏧', '💳', '🃏', '🎴', '🀄', '📲', '📲', '🧾', '💸', '🧮', '🔐', '🔒', '🔓', '🗝️', '🏆', '⭐', '🌟', '💫', '✨', '🔥', '💎', '👛', '👝', '👛', '💰', '🪭', '🎁', '🎀', '🎊', '🎉', '🎈', '🏅', '🥇', '🥈', '🥉', '🏆', '🎖️', '⚡', '💥', '💢', '💨'];
+        const walletIcons = ['📱', '💳', '🟢', '🔵', '🟡', '🟠', '💰', '💵', '🪙', '🏦', '🏧', '🃏', '🎴', '🀄', '📲', '🧾', '💸', '🧮', '🔐', '🔒', '🔓', '🗝️', '🏆', '⭐', '🌟', '💫', '✨', '🔥', '💎', '👛', '👝', '🪭', '🎁', '🎀', '🎊', '🎉', '🎈', '🏅', '🥇', '🥈', '🥉', '⚡', '💥', '💢', '💨'];
         function renderWalletIconSelector() { document.getElementById('walletIconSelector').innerHTML = walletIcons.map(icon => `<div class="source-option ${currentWalletIcon === icon ? 'selected' : ''}" onclick="selectWalletIcon('${icon}')" style="font-size: 22px; padding: 10px 12px;">${icon}</div>`).join(''); }
         function selectWalletIcon(icon) { currentWalletIcon = icon; renderWalletIconSelector(); }
         function addWallet() { const name = document.getElementById('newWalletName').value.trim(); if (!name) { showToast('Enter a name'); return; } data.wallets.push({ id: Date.now(), name, icon: currentWalletIcon }); saveData(); document.getElementById('newWalletName').value = ''; renderWalletList(); showToast('Added!'); }
@@ -3639,7 +3639,7 @@
             `).join('');
         }
 
-        const purchaseSourceIcons = ['🛒', '🍔', '🍕', '🥗', '🛍️', '📦', '💊', '📱', '👕', '🏠', '🚗', '✈️', '🎬', '🎮', '💰', '☕', '🍺', '🍷', '🍰', '🍩', '🍪', '🍿', '🥤', '🧃', '🧋', '🍵', '🧇', '🥪', '🌮', '🌯', '🥙', '🍱', '🍣', '🍜', '🍝', '🥡', '🍲', '🥘', '🍛', '🍖', '🥩', '🍗', '🥓', '🧀', '🥚', '🥑', '🍅', '🥕', '🌽', '🥦', '🍎', '🍊', '🍋', '🍓', '🍇', '🍉', '🍑', '🍒', '🥭', '🍍', '🥥', '🥝', '🍅', '🥑', '🛍️', '🏪', '🏬', '🏣', '🏤', '🏥', '🏩', '🏨', '🏭', '🏢', '🏬', '🏫', '🏣', '🏥', '🏦', '🏧', '🏛️', '⛪', '🕌', '🛕', '⛩️', '🕍', '⛲', '⛺', '🌍', '🌎', '🌏', '🗽', '🗼', '🗻', '🌋', '🏔️', '⛰️', '🏕️', '🏖️', '🏜️', '🏝️', '🏞️'];
+        const purchaseSourceIcons = ['🛒', '🍔', '🍕', '🥗', '🛍️', '📦', '💊', '📱', '👕', '🏠', '🚗', '✈️', '🎬', '🎮', '💰', '☕', '🍺', '🍷', '🍰', '🍩', '🍪', '🍿', '🥤', '🧃', '🧋', '🍵', '🧇', '🥪', '🌮', '🌯', '🥙', '🍱', '🍣', '🍜', '🍝', '🥡', '🍲', '🥘', '🍛', '🍖', '🥩', '🍗', '🥓', '🧀', '🥚', '🥑', '🍅', '🥕', '🌽', '🥦', '🍎', '🍊', '🍋', '🍓', '🍇', '🍉', '🍑', '🍒', '🥭', '🍍', '🥥', '🥝', '🏪', '🏬', '🏣', '🏤', '🏥', '🏩', '🏨', '🏭', '🏢', '🏫', '🏛️', '⛪', '🕌', '🛕', '⛩️', '🕍', '⛲', '⛺', '🌍', '🌎', '🌏', '🗽', '🗼', '🗻', '🌋', '🏔️', '⛰️', '🏕️', '🏖️', '🏜️', '🏝️', '🏞️'];
         function renderPurchaseSourceIconSelector() {
             document.getElementById('purchaseSourceIconSelector').innerHTML = purchaseSourceIcons.map(icon => 
                 `<div class="source-option ${currentPurchaseSourceIcon === icon ? 'selected' : ''}" onclick="selectPurchaseSourceIcon('${icon}')" style="font-size: 22px; padding: 10px 12px;">${icon}</div>`
