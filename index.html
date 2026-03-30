@@ -3939,15 +3939,28 @@
         function renderLoanSourceList() {
             const container = document.getElementById('loanSourceList');
             if (data.loanSources.length === 0) {
-                container.innerHTML = '<p style="color: var(--gray); font-size: 12px;">No loan sources added</p>';
+                container.innerHTML = '<p style="color: var(--gray); font-size: 12px;">No loan sources added. Add from accounts below or create new.</p>';
             } else {
-                container.innerHTML = data.loanSources.map(ls => `
-                    <div style="display: inline-flex; align-items: center; gap: 8px; background: white; padding: 6px 12px; border-radius: 8px; margin-right: 8px; margin-bottom: 5px;">
-                        <span style="font-size: 16px;">${ls.icon}</span>
-                        <span style="font-size: 12px;">${ls.name}</span>
-                        <button onclick="deleteLoanSource(${ls.id})" style="background: none; border: none; color: var(--danger); cursor: pointer; font-size: 14px; padding: 0;">×</button>
-                    </div>
-                `).join('');
+                container.innerHTML = data.loanSources.map(ls => {
+                    // Count loans for this source
+                    const loanCount = data.loans.filter(l => l.loanSourceId === ls.id).length;
+                    const icon = ls.icon || (ls.type === 'account' ? '🏦' : '💳');
+                    return `
+                        <div style="display: flex; align-items: center; justify-content: space-between; background: white; padding: 10px 12px; border-radius: 8px; margin-bottom: 8px; border: 1px solid #e5e7eb;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <span style="font-size: 20px; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; background: #fce7f3; border-radius: 8px;">${icon}</span>
+                                <div>
+                                    <div style="font-weight: 500; font-size: 13px;">${ls.name}</div>
+                                    <div style="font-size: 10px; color: var(--gray);">${ls.type === 'account' ? 'From Account' : 'Manual'}${loanCount > 0 ? ' • ' + loanCount + ' loan(s)' : ''}</div>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 5px;">
+                                <button onclick="editLoanSource(${ls.id})" style="padding: 5px 10px; background: var(--primary); color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 11px;">Edit</button>
+                                <button onclick="deleteLoanSource(${ls.id})" style="padding: 5px 10px; background: var(--danger); color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 11px;">Del</button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
             }
             
             // Also show accounts as selectable loan sources
@@ -4001,7 +4014,21 @@
                 showToast('Deleted');
             }
         }
-
+        
+        function editLoanSource(id) {
+            const source = data.loanSources.find(ls => ls.id === id);
+            if (!source) return;
+            
+            const newName = prompt('Edit loan source name:', source.name);
+            if (!newName || newName.trim() === source.name) return;
+            
+            source.name = newName.trim();
+            saveData();
+            renderLoanSourceList();
+            renderLoanSourceSelector();
+            showToast('Updated!');
+        }
+        
         function renderLoanSourceSelector() {
             const container = document.getElementById('loanSourceSelector');
             if (!container) return;
