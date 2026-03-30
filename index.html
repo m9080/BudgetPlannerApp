@@ -1162,15 +1162,82 @@
         <div class="modal" style="max-height: 95vh;">
             <div class="modal-handle"></div>
             <div class="modal-title">🎨 Icon Library</div>
-            <p style="font-size: 11px; color: var(--gray); margin-bottom: 15px;">Click any icon to copy it. Total icons: <strong id="totalIconsCount">0</strong></p>
+            <p style="font-size: 11px; color: var(--gray); margin-bottom: 10px;">Total icons: <strong id="totalIconsCount">0</strong></p>
             
-            <div style="margin-bottom: 15px;">
-                <input type="text" class="form-control" id="iconSearch" placeholder="Search icons..." oninput="filterIconLibrary()" style="padding: 10px;">
+            <!-- Add New Icon Section -->
+            <div style="background: var(--light); border-radius: 12px; padding: 15px; margin-bottom: 15px;">
+                <h4 style="font-size: 13px; margin-bottom: 10px;">➕ Add New Icon</h4>
+                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <input type="text" class="form-control" id="newIconInput" placeholder="Paste emoji or icon" style="flex: 1; padding: 10px; text-align: center; font-size: 24px;">
+                </div>
+                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <select class="form-control" id="newIconCategory" style="flex: 1; padding: 8px;">
+                        <option value="expense">Expense</option>
+                        <option value="income">Income</option>
+                        <option value="source">Source</option>
+                        <option value="budget">Budget</option>
+                        <option value="accountType">Account Type</option>
+                        <option value="wallet">Wallet</option>
+                        <option value="purchaseSource">Purchase Source</option>
+                        <option value="general">General</option>
+                    </select>
+                    <button onclick="addNewIcon()" style="padding: 10px 20px; background: var(--success); color: white; border: none; border-radius: 8px; cursor: pointer;">Add</button>
+                </div>
+                
+                <!-- Internet Search -->
+                <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #ddd;">
+                    <div style="display: flex; gap: 10px; margin-bottom: 5px;">
+                        <input type="text" class="form-control" id="iconSearchInput" placeholder="Search emoji name (e.g. pizza, house, car)..." style="flex: 1; padding: 8px;">
+                        <button onclick="searchInternetIcons()" style="padding: 8px 15px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer;">🔍</button>
+                    </div>
+                    <div id="internetIconResults" style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; max-height: 100px; overflow-y: auto;"></div>
+                    <p style="font-size: 10px; color: var(--gray); margin-top: 5px;">Click an icon to select it, then choose category and add</p>
+                </div>
             </div>
             
-            <div id="iconLibraryContent" style="max-height: 60vh; overflow-y: auto;"></div>
+            <!-- Search & Filter -->
+            <div style="margin-bottom: 15px;">
+                <input type="text" class="form-control" id="iconSearch" placeholder="🔍 Filter icons by category..." oninput="filterIconLibrary()" style="padding: 10px;">
+            </div>
+            
+            <!-- Edit Mode Toggle -->
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <button onclick="toggleEditMode()" id="editModeBtn" style="flex: 1; padding: 10px; background: var(--light); border: 2px solid var(--primary); border-radius: 8px; cursor: pointer;">✏️ Edit Mode</button>
+            </div>
+            
+            <div id="iconLibraryContent" style="max-height: 50vh; overflow-y: auto;"></div>
             
             <button class="btn btn-outline" onclick="closeModal('iconLibraryModal')" style="margin-top: 15px;">Close</button>
+        </div>
+    </div>
+    
+    <!-- Edit Icon Modal -->
+    <div class="modal-overlay" id="editIconModal">
+        <div class="modal" style="max-width: 350px;">
+            <div class="modal-handle"></div>
+            <div class="modal-title">✏️ Edit Icon</div>
+            <div style="text-align: center; margin: 20px 0;">
+                <div id="editIconPreview" style="font-size: 60px; margin-bottom: 20px;">👻</div>
+                <input type="text" class="form-control" id="editIconInput" style="text-align: center; font-size: 24px; padding: 15px; margin-bottom: 15px;">
+            </div>
+            <div class="form-group">
+                <label style="font-size: 12px; color: var(--gray);">Category</label>
+                <select class="form-control" id="editIconCategory" style="padding: 10px;">
+                    <option value="expense">Expense</option>
+                    <option value="income">Income</option>
+                    <option value="source">Source</option>
+                    <option value="budget">Budget</option>
+                    <option value="accountType">Account Type</option>
+                    <option value="wallet">Wallet</option>
+                    <option value="purchaseSource">Purchase Source</option>
+                    <option value="general">General</option>
+                </select>
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button onclick="deleteIcon()" style="flex: 1; padding: 12px; background: var(--danger); color: white; border: none; border-radius: 8px; cursor: pointer;">🗑️ Delete</button>
+                <button onclick="saveIconEdit()" style="flex: 1; padding: 12px; background: var(--success); color: white; border: none; border-radius: 8px; cursor: pointer;">💾 Save</button>
+            </div>
+            <button onclick="closeModal('editIconModal')" style="width: 100%; padding: 10px; background: var(--light); border: none; border-radius: 8px; cursor: pointer; margin-top: 10px;">Cancel</button>
         </div>
     </div>
 
@@ -3516,29 +3583,65 @@
         }
         // ==================== ICON LIBRARY ====================
         let iconLibrarySearch = '';
+        let editMode = false;
+        let selectedInternetIcon = null;
+        let editingIcon = null;
+        let editingIconOldCategory = null;
+        
+        // Common emoji sets for internet search
+        const commonEmojis = {
+            food: ['🍔', '🍕', '🍜', '🍣', '🍱', '🍰', '🍩', '🍪', '🍿', '🧃', '🥤', '☕', '🍵', '🧋', '🍺', '🍷', '🥗', '🥙', '🌮', '🌯', '🥪', '🍞', '🥐', '🥖', '🧀', '🥚', '🍳', '🥓', '🥩', '🍗', '🍖', '🌭', '🍔', '🍟', '🍕', '🥐', '🥯', '🥨', '🧇', '🥞', '🧈', '🍯', '🍯', '🥛', '🍼', '☕', '🧃', '🥤', '🧋', '🍵', '🍶', '🍺', '🍻', '🥂', '🥃', '🍷', '🍸', '🍹', '🍾', '🧊', '🥄', '🍴', '🍽️', '🥣', '🥡', '🥢', '🍱', '🍘', '🍙', '🍚', '🍛', '🍜', '🍝', '🍠', '🍢', '🍣', '🍤', '🍥', '🥮', '🥠', '🍡', '🍦', '🍧', '🍨', '🍩', '🍪', '🎂', '🍰', '🧁', '🥧', '🍫', '🍬', '🍭', '🍮', '🍯'],
+            animals: ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷', '🐽', '🐸', '🐵', '🙈', '🙉', '🙊', '🐒', '🐔', '🐧', '🐦', '🐤', '🐣', '🐥', '🦆', '🦅', '🦉', '🦇', '🐺', '🐗', '🐴', '🦄', '🐝', '🐛', '🦋', '🐌', '🐞', '🐜', '🦟', '🦗', '🕷️', '🦂', '🐢', '🐍', '🦎', '🦖', '🦕', '🐙', '🦑', '🦐', '🦞', '🦀', '🐡', '🐠', '🐟', '🐬', '🐳', '🐋', '🦈', '🐊', '🐅', '🐆', '🦓', '🦍', '🦧', '🦣', '🐘', '🦛', '🦏', '🐪', '🐫', '🦒', '🦘', '🦥', '🦦', '🦨', '🦩', '🦚', '🦜', '🦢', '🦩', '🕊️', '🐇', '🦝', '🦨', '🦡', '🦫', '🦦', '🦥', '🐁', '🐀', '🐿️', '🦔'],
+            transport: ['🚗', '🚕', '🚙', '🚌', '🚎', '🏎️', '🚓', '🚑', '🚒', '🚐', '🛻', '🚚', '🚛', '🚜', '🦯', '🦽', '🦼', '🛴', '🚲', '🛵', '🏍️', '🛺', '🚨', '🚔', '🚍', '🚘', '🚖', '🚡', '🚠', '🚟', '🚃', '🚋', '🚞', '🚝', '🚄', '🚅', '🚈', '🚂', '🚆', '🚇', '🚊', '🚉', '✈️', '🛫', '🛬', '🛩️', '💺', '🛰️', '🚀', '🛸', '🚁', '🛶', '⛵', '🚤', '🛥️', '🛳️', '⛴️', '🚢', '⚓', '🪝', '⛽', '🚧', '🚦', '🚥', '🚏', '🗺️', '🗿', '🗽', '🗼', '🏰', '🏯', '🏟️', '🎡', '🎢', '🎠', '⛲', '⛱️', '🏖️', '🏝️', '🏜️', '🌋', '⛰️', '🏔️', '🗻', '🏕️', '⛺', '🛖', '🏠', '🏡', '🏢', '🏣', '🏤', '🏥', '🏦', '🏨', '🏩', '🏪', '🏫', '🏬', '🏭', '🏯', '🏰', '💒', '🗼', '🗽', '⛪', '🕌', '🕍', '🛤️', '🛣️', '🗾', '🗺️', '🧭', '🧭'],
+            tech: ['📱', '💻', '🖥️', '🖨️', '⌨️', '🖱️', '🖲️', '💽', '💾', '💿', '📀', '📼', '📷', '📸', '📹', '🎥', '📽️', '🎞️', '📞', '☎️', '📟', '📠', '📺', '📻', '🎙️', '🎚️', '🎛️', '🧭', '⏱️', '⏲️', '⏰', '🕰️', '⌛', '⏳', '📡', '🔋', '🔌', '💡', '🔦', '🕯️', '🧯', '🛢️', '💸', '💵', '💴', '💶', '💷', '🪙', '💰', '💳', '💎', '⚖️', '🪜', '🧰', '🔧', '🔨', '⚒️', '🛠️', '⛏️', '🪚', '🔩', '⚙️', '🧱', '⛓️', '🧲', '🔫', '💣', '🧨', '🪓', '🔪', '🗡️', '⚔️', '🛡️', '🚬', '⚰️', '⚱️', '🏺', '🔮', '📿', '💈', '⚗️', '🔭', '🔬', '🕳️', '🩹', '🩺', '💊', '💉', '🩸', '🧬', '🦠', '🧫', '🧪', '🌡️', '🧹', '🪠', '🧺', '🧻', '🚽', '🚰', '🚿', '🛁', '🛀', '🧼', '🪥', '🪒', '🧽', '🪣', '🧴', '🛎️', '🔑', '🗝️', '🚪', '🪑', '🛋️', '🛏️', '🛌', '🧸', '🪆', '🖼️', '🪞', '🪟', '🛍️', '🛒', '🎁', '🎈', '🎏', '🎀', '🪄', '🎊', '🎉', '🎎', '🏮', '🎐', '🧧', '✉️', '📩', '📨', '📧', '💌', '📥', '📤', '📦', '🏷️', '📪', '📫', '📬', '📭', '📮', '📯', '📜', '📃', '📄', '📑', '🧾', '📊', '📈', '📉', '🗒️', '🗓️', '📆', '📅', '🗑️', '📇', '🗃️', '🗳️', '🗄️', '📋', '📁', '📂', '🗂️', '🗞️', '📰', '📓', '📔', '📒', '📕', '📖', '📗', '📘', '📙', '📚', '📖', '🔖', '🏷️', '🔗', '📎', '🖇️', '📐', '📏', '🧮', '📌', '📍', '✂️', '🖊️', '🖋️', '✒️', '🖌️', '🖍️', '📝', '✏️', '🔍', '🔎', '🔏', '🔐', '🔒', '🔓'],
+            nature: ['🌸', '💮', '🏵️', '🌹', '🥀', '🌺', '🌻', '🌼', '🌷', '🌱', '🌲', '🌳', '🌴', '🌵', '🌾', '🌿', '☘️', '🍀', '🍁', '🍂', '🍃', '🍄', '🌰', '🦀', '🦞', '🦐', '🦑', '🦪', '🍇', '🍈', '🍉', '🍊', '🍋', '🍌', '🍍', '🥭', '🍎', '🍏', '🍐', '🍑', '🍒', '🍓', '🫐', '🥝', '🍅', '🍆', '🥑', '🥦', '🥬', '🥒', '🌽', '🥕', '🧄', '🧅', '🥔', '🍠', '🥐', '🥯', '🍞', '🥖', '🥨', '🧀', '🥚', '🍳', '🧈', '🥞', '🧇', '🥓', '🥩', '🍗', '🍖', '🦴', '🌍', '🌎', '🌏', '🌐', '🪨', '🌑', '🌒', '🌓', '🌔', '🌕', '🌖', '🌗', '🌘', '🌙', '🌚', '🌛', '🌜', '🌡️', '☀️', '🌝', '🌞', '🪐', '⭐', '🌟', '✨', '💫', '☁️', '⛅', '⛈️', '🌤', '🌥️', '🌦️', '🌧️', '🌩️', '🌨️', '🌪️', '🌫️', '🌬️', '💨', '🌈', '🌂', '☂️', '☔', '⛱️', '⚡', '❄️', '☃️', '⛄', '🌬️', '💧', '💦', '🫧', '☔', '🔔', '🛎️', '🔕', '🔇', '🔈', '🔉', '🔊', '📣', '🔔', '🔕'],
+            people: ['👶', '🧒', '👦', '👧', '🧑', '👱', '👨', '🧔', '👩', '🧓', '👴', '👵', '🙍', '🙎', '🙅', '🙆', '💁', '🙋', '🧏', '🙇', '🤦', '🤷', '👮', '🕵️', '💂', '🥷', '👷', '🤴', '👸', '👳', '👲', '🧕', '🤵', '👰', '🤰', '🤱', '👼', '🎒', '🎓', '👑', '📿', '💄', '💍', '💎', '👁️', '👀', '🦷', '🦷', '👅', '👄', '💋', '👋', '🤚', '🖐️', '✋', '🖖', '👌', '🤌', '🤏', '✌️', '🤞', '🤟', '🤘', '🤙', '👈', '👉', '👆', '🖕', '👇', '☝️', '👍', '👎', '✊', '👊', '🤛', '🤜', '👏', '🙌', '👐', '🤲', '🤝', '🙏', '✍️', '💅', '🤳', '💪', '🦾', '🦿', '🦵', '🦶', '👣', '🦻', '👂', '🦮', '🐕‍🦺', '🐶', '😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂', '🙂', '🙃', '😉', '😊', '😇', '🥰', '😍', '🤩', '😘', '😗', '☺️', '😚', '😙', '🥲', '😋', '😛', '😜', '🤪', '😝', '🤑', '🤗', '🤭', '🤫', '🤔', '🤐', '🤨', '😐', '😑', '😶', '😏', '😒', '🙄', '😬', '🤥', '😌', '😔', '😪', '🤤', '😴', '😷', '🤒', '🤕', '🤢', '🤮', '🤧', '🥵', '🥶', '🥴', '😵', '🤯', '🤠', '🥳', '🥸', '😎', '🤓', '🧐', '😕', '😟', '🙁', '☹️', '😮', '😯', '😲', '😳', '🥺', '😦', '😧', '😨', '😰', '😥', '😢', '😭', '😱', '😖', '😣', '😞', '😓', '😩', '😫', '🥱', '😤', '😡', '😠', '🤬', '😈', '👿', '💀', '☠️', '💩', '🤡', '👹', '👺', '👻', '👽', '👾', '🤖'],
+            symbols: ['❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔', '❤️‍🔥', '❤️‍🩹', '❣️', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟', '☮️', '✝️', '☪️', '🕉️', '☸️', '✡️', '🔯', '🕎', '☯️', '☦️', '🛐', '⛎', '♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑', '♒', '♓', '🆔', '⚛️', '🉑', '☢️', '☣️', '📴', '📳', '🈶', '🈚', '🈸', '🈺', '🈷️', '✴️', '🆚', '💮', '🉐', '㊙️', '㊗️', '🈴', '🈵', '🈹', '🈲', '🅰️', '🅱️', '🆎', '🆑', '🅾️', '🆘', '❌', '⭕', '🛑', '⛔', '📛', '🚫', '💯', '💢', '♨️', '🚷', '🚯', '🚳', '🚱', '🔞', '📵', '🚭', '❗', '❕', '❓', '❔', '‼️', '⁉️', '🔅', '🔆', '〽️', '⚠️', '🚸', '🔱', '⚜️', '🔰', '♻️', '✅', '🈯', '💹', '❇️', '✳️', '❎', '🌐', '💠', 'Ⓜ️', '🌀', '💤', '🏧', '🚾', '♿', '🅿️', '🛗', '🈳', '🈂️', '🛂', '🛃', '🛄', '🛅', '🚹', '🚺', '🚼', '⚧️', '🚻', '🚮', '🎦', '📶', '🈁', '🔣', 'ℹ️', '🔤', '🔡', '🔠', '🆖', '🆗', '🆙', '🆒', '🆕', '🆓', '0️⃣', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟', '🔢', '#️⃣', '*️⃣', '⏏️', '▶️', '⏸️', '⏯️', '⏹️', '⏺️', '⏭️', '⏮️', '⏩', '⏪', '⏫', '⏬', '◀️', '🔼', '🔽', '➡️', '⬅️', '⬆️', '⬇️', '↗️', '↘️', '↙️', '↖️', '↕️', '↔️', '↪️', '↩️', '⤴️', '⤵️', '🔀', '🔁', '🔂', '🔄', '🔃', '🎵', '🎶', '➕', '➖', '➗', '✖️', '♾️', '💲', '💱', '™️', '©️', '®️', '〰️', '➰', '➿', '🔚', '🔙', '🔛', '🔝', '🔜', '✔️', '☑️', '🔘', '🔴', '🟠', '🟡', '🟢', '🔵', '🟣', '⚫', '⚪', '🟤', '🔺', '🔻', '🔸', '🔹', '🔶', '🔷', '🔳', '🔲', '▪️', '▫️', '◾', '◽', '◼️', '◻️', '🟥', '🟧', '🟨', '🟩', '🟦', '🟪', '⬛', '⬜', '🟫', '🔈', '🔇', '🔉', '🔊', '🔋', '🔌', '🪫', '📴', '📵', '🔕', '🕐', '🕑', '🕒', '🕓', '🕔', '🕕', '🕖', '🕗', '🕘', '🕙', '🕚', '🕛'],
+            activities: ['⚽', '⚾', '🥎', '🏀', '🏐', '🏈', '🏉', '🎾', '🥏', '🎳', '🏏', '🏑', '🥍', '🏓', '🏸', '🥊', '🥋', '🎽', '🛹', '🛼', '🛷', '⛸️', '🥌', '🎱', '🎮', '🕹️', '🎲', '♟️', '🎯', '🎳', '🎭', '🎨', '🎬', '🎤', '🎧', '🎼', '🎹', '🥁', '🪘', '🎷', '🎺', '🪗', '🎸', '🪕', '🎻', '🎲', '♠️', '♥️', '♦️', '♣️', '🃏', '🀄', '🎴', '🎭', '🖼️', '🎨', '🧵', '🧶', '🪢', '👗', '👘', '🥻', '🩱', '🩲', '🩳', '👙', '👚', '🪭', '👛', '👜', '👝', '🛍️', '🎒', '👞', '👟', '🥾', '🥿', '👠', '👡', '🩰', '👢', '👞', '👟', '👠', '👡', '👢', '🪪', '👑', '🎒', '👓', '🧢', '🪖', '🧣', '🧤', '🧥', '🧦', '🧤', '🧣', '🧤', '🎩', '🎓', '🧢', '⛑️', '📿', '🎒', '🎗️', '🎟️', '🎫', '🩼', '🩴', '👗', '👘', '🥻', '🎽', '👕', '👚', '🩱', '👙', '👘', '👗', '🪭', '🎊', '🎉', '🎈', '🎆', '🎇', '🧨', '🎄', '🎃', '🎅', '🎁', '🎀', '🎏', '🎎', '🏮', '🧧', '🎐', '🧿', '🪔', '🛍️', '🎎', '🎍', '🎋', '🏮', '🎎', '🎐', '🧿']
+        };
         
         function openIconLibraryModal() {
+            editMode = false;
+            document.getElementById('editModeBtn').textContent = '✏️ Edit Mode';
+            document.getElementById('editModeBtn').style.background = 'var(--light)';
             renderIconLibrary();
             openModal('iconLibraryModal');
+        }
+        
+        function toggleEditMode() {
+            editMode = !editMode;
+            const btn = document.getElementById('editModeBtn');
+            if (editMode) {
+                btn.textContent = '✅ Exit Edit Mode';
+                btn.style.background = 'var(--success)';
+                showToast('Click any icon to edit or delete', 2000);
+            } else {
+                btn.textContent = '✏️ Edit Mode';
+                btn.style.background = 'var(--light)';
+            }
+            renderIconLibrary();
         }
         
         function renderIconLibrary() {
             let allIcons = [];
             let categoryNames = {
-                expense: 'Expense',
-                income: 'Income',
-                source: 'Source',
-                accountType: 'Account Type',
-                budget: 'Budget',
-                nav: 'Navigation',
-                general: 'General'
+                expense: '💸 Expense',
+                income: '💰 Income',
+                source: '👨‍👩‍👧 Source',
+                accountType: '🏦 Account Type',
+                budget: '📊 Budget',
+                wallet: '👛 Wallet',
+                purchaseSource: '🛒 Purchase Source',
+                nav: '🧭 Navigation',
+                general: '🏷️ General'
             };
             
             // Collect all icons with category info
             for (let category in ALL_ICONS) {
+                if (category === 'nav') continue; // Skip nav
                 ALL_ICONS[category].forEach(icon => {
                     if (!allIcons.find(i => i.icon === icon)) {
-                        allIcons.push({ icon, category: categoryNames[category] || category });
+                        allIcons.push({ icon, category: categoryNames[category] || category, catKey: category });
                     }
                 });
             }
@@ -3546,23 +3649,34 @@
             document.getElementById('totalIconsCount').textContent = allIcons.length;
             
             // Filter by search
+            let filteredIcons = allIcons;
             if (iconLibrarySearch) {
-                allIcons = allIcons.filter(i => i.category.toLowerCase().includes(iconLibrarySearch.toLowerCase()));
+                filteredIcons = allIcons.filter(i => 
+                    i.category.toLowerCase().includes(iconLibrarySearch.toLowerCase())
+                );
             }
             
             // Group by category
             let html = '';
             let grouped = {};
-            allIcons.forEach(item => {
-                if (!grouped[item.category]) grouped[item.category] = [];
-                grouped[item.category].push(item.icon);
+            filteredIcons.forEach(item => {
+                if (!grouped[item.category]) grouped[item.category] = { catKey: item.catKey, icons: [] };
+                grouped[item.category].icons.push(item.icon);
             });
             
             for (let category in grouped) {
+                const catKey = grouped[category].catKey;
                 html += `<div style="margin-bottom: 20px;">
-                    <h4 style="font-size: 12px; color: var(--gray); margin-bottom: 10px;">${category} (${grouped[category].length})</h4>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h4 style="font-size: 13px; color: var(--gray); margin: 0;">${category} (${grouped[category].icons.length})</h4>
+                        <button onclick="addIconToCategory('${catKey}')" style="padding: 5px 10px; background: var(--success); color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 11px;">➕ Add</button>
+                    </div>
                     <div style="display: flex; flex-wrap: wrap; gap: 5px;">
-                        ${grouped[category].map(icon => `<div onclick="copyIcon('${icon}')" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 20px; background: var(--light); border-radius: 8px; cursor: pointer;" title="Click to copy">${icon}</div>`).join('')}
+                        ${grouped[category].icons.map(icon => `
+                            <div onclick="${editMode ? `openEditIconModal('${icon}', '${catKey}')` : `copyIcon('${icon}')`}" 
+                                 style="width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; font-size: 22px; background: ${editMode ? '#fef3c7' : 'var(--light)'}; border-radius: 8px; cursor: pointer; border: ${editMode ? '2px dashed orange' : 'none'};" 
+                                 title="${editMode ? 'Click to edit' : 'Click to copy'}">${icon}</div>
+                        `).join('')}
                     </div>
                 </div>`;
             }
@@ -3587,18 +3701,157 @@
             });
         }
         
-        // Add new icon to any category
-        function addIconToCategory(category, icon) {
-            if (!ALL_ICONS[category]) {
-                ALL_ICONS[category] = [];
+        function addNewIcon() {
+            const icon = document.getElementById('newIconInput').value.trim();
+            const category = document.getElementById('newIconCategory').value;
+            
+            if (!icon) {
+                showToast('Please enter an icon', 1500);
+                return;
             }
+            
+            if (!ALL_ICONS[category]) ALL_ICONS[category] = [];
+            
             if (!ALL_ICONS[category].includes(icon)) {
                 ALL_ICONS[category].push(icon);
+                document.getElementById('newIconInput').value = '';
+                renderIconLibrary();
+                saveIconLibrary();
                 showToast(`Added ${icon} to ${category}!`, 1500);
             } else {
                 showToast('Icon already exists!', 1000);
             }
         }
+        
+        function addIconToCategory(category) {
+            const icon = prompt('Enter emoji to add:');
+            if (!icon) return;
+            
+            if (!ALL_ICONS[category]) ALL_ICONS[category] = [];
+            
+            if (!ALL_ICONS[category].includes(icon)) {
+                ALL_ICONS[category].push(icon);
+                renderIconLibrary();
+                saveIconLibrary();
+                showToast(`Added ${icon}!`, 1500);
+            } else {
+                showToast('Icon already exists!', 1000);
+            }
+        }
+        
+        function openEditIconModal(icon, category) {
+            editingIcon = icon;
+            editingIconOldCategory = category;
+            document.getElementById('editIconPreview').textContent = icon;
+            document.getElementById('editIconInput').value = icon;
+            document.getElementById('editIconCategory').value = category;
+            openModal('editIconModal');
+        }
+        
+        function saveIconEdit() {
+            const newIcon = document.getElementById('editIconInput').value.trim();
+            const newCategory = document.getElementById('editIconCategory').value;
+            
+            if (!newIcon) {
+                showToast('Icon cannot be empty', 1500);
+                return;
+            }
+            
+            // Remove from old category
+            if (ALL_ICONS[editingIconOldCategory]) {
+                ALL_ICONS[editingIconOldCategory] = ALL_ICONS[editingIconOldCategory].filter(i => i !== editingIcon);
+            }
+            
+            // Add to new category
+            if (!ALL_ICONS[newCategory]) ALL_ICONS[newCategory] = [];
+            if (!ALL_ICONS[newCategory].includes(newIcon)) {
+                ALL_ICONS[newCategory].push(newIcon);
+            }
+            
+            closeModal('editIconModal');
+            renderIconLibrary();
+            saveIconLibrary();
+            showToast(`Icon updated to ${newIcon}!`, 1500);
+        }
+        
+        function deleteIcon() {
+            if (!confirm(`Delete icon ${editingIcon}?`)) return;
+            
+            if (ALL_ICONS[editingIconOldCategory]) {
+                ALL_ICONS[editingIconOldCategory] = ALL_ICONS[editingIconOldCategory].filter(i => i !== editingIcon);
+            }
+            
+            closeModal('editIconModal');
+            renderIconLibrary();
+            saveIconLibrary();
+            showToast('Icon deleted!', 1500);
+        }
+        
+        function searchInternetIcons() {
+            const query = document.getElementById('iconSearchInput').value.toLowerCase().trim();
+            if (!query) {
+                showToast('Enter search term', 1500);
+                return;
+            }
+            
+            let results = [];
+            
+            // Search in predefined emoji sets
+            for (let category in commonEmojis) {
+                if (category.includes(query) || query.includes(category)) {
+                    results = [...results, ...commonEmojis[category]];
+                }
+            }
+            
+            // If no specific category match, show some from each
+            if (results.length === 0) {
+                for (let category in commonEmojis) {
+                    results = [...results, ...commonEmojis[category].slice(0, 20)];
+                }
+            }
+            
+            // Remove duplicates and limit
+            results = [...new Set(results)].slice(0, 30);
+            
+            const html = results.map(icon => 
+                `<div onclick="selectInternetIcon('${icon}')" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 20px; background: var(--light); border-radius: 8px; cursor: pointer;" title="Click to select">${icon}</div>`
+            ).join('');
+            
+            document.getElementById('internetIconResults').innerHTML = html || '<p style="color: var(--gray);">No results</p>';
+        }
+        
+        function selectInternetIcon(icon) {
+            selectedInternetIcon = icon;
+            document.getElementById('newIconInput').value = icon;
+            document.getElementById('internetIconResults').innerHTML = `<p style="color: var(--success);">Selected: ${icon}</p>`;
+            showToast(`Selected: ${icon}`, 1000);
+        }
+        
+        function saveIconLibrary() {
+            // Save custom icons to localStorage
+            localStorage.setItem('customIconLibrary', JSON.stringify(ALL_ICONS));
+        }
+        
+        function loadIconLibrary() {
+            const saved = localStorage.getItem('customIconLibrary');
+            if (saved) {
+                try {
+                    const customIcons = JSON.parse(saved);
+                    for (let category in customIcons) {
+                        if (ALL_ICONS[category]) {
+                            customIcons[category].forEach(icon => {
+                                if (!ALL_ICONS[category].includes(icon)) {
+                                    ALL_ICONS[category].push(icon);
+                                }
+                            });
+                        }
+                    }
+                } catch(e) {}
+            }
+        }
+        
+        // Load custom icons on startup
+        loadIconLibrary();
         
         // ==================== CATEGORY FUNCTIONS ====================
         function selectExpenseIcon(icon) { currentExpenseIcon = icon; renderExpenseIconSelector(); }
