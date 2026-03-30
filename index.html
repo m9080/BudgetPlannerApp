@@ -1682,14 +1682,63 @@
             }
         }
         
-        // Auto sync on page load
+        // Auto sync on page load - compares local vs cloud
         async function autoSync() {
             const token = await getGitHubToken();
-            if (token) {
-                cloudStatus = 'synced';
+            if (!token) {
                 updateSyncStatus();
-                showToast('🔄 Auto syncing...', 2000);
-                await uploadToCloud();
+                return;
+            }
+            
+            cloudStatus = 'syncing';
+            updateSyncStatus();
+            
+            try {
+                // Check if cloud has data
+                const response = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/data.json?ref=${GITHUB_BRANCH}`, {
+                    headers: { 'Authorization': `token ${token}` }
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    const cloudContent = decodeURIComponent(escape(atob(result.content)));
+                    const cloudData = JSON.parse(cloudContent);
+                    dataSha = result.sha;
+                    
+                    const localData = localStorage.getItem('moneyManagerPro');
+                    const localTime = localData ? JSON.parse(localData).lastSyncTime : null;
+                    const cloudTime = cloudData.lastSyncTime;
+                    
+                    // Compare timestamps
+                    if (!localTime || (cloudTime && new Date(cloudTime) > new Date(localTime))) {
+                        // Cloud is newer - download
+                        data = cloudData;
+                        localStorage.setItem('moneyManagerPro', JSON.stringify(data));
+                        cloudStatus = 'synced';
+                        updateSyncStatus();
+                        renderAll();
+                        showToast('📥 Synced from cloud!', 2000);
+                    } else if (localTime && new Date(localTime) > new Date(cloudTime || 0)) {
+                        // Local is newer - upload
+                        cloudStatus = 'syncing';
+                        updateSyncStatus();
+                        await uploadToCloud();
+                    } else {
+                        // Already in sync
+                        cloudStatus = 'synced';
+                        updateSyncStatus();
+                        showToast('✅ Already in sync', 1500);
+                    }
+                } else if (response.status === 404) {
+                    // No cloud data - upload local
+                    cloudStatus = 'syncing';
+                    updateSyncStatus();
+                    await uploadToCloud();
+                }
+            } catch(e) {
+                console.log('Auto sync error:', e);
+                cloudStatus = 'offline';
+                updateSyncStatus();
             }
         }
         
