@@ -1719,7 +1719,7 @@
                 });
                 if (response.ok) {
                     const result = await response.json();
-                    const content = atob(result.content);
+                    const content = decodeURIComponent(escape(atob(result.content)));
                     const githubData = JSON.parse(content);
                     dataSha = result.sha;
                     
@@ -1770,7 +1770,7 @@
                 
                 if (response.ok) {
                     const result = await response.json();
-                    const content = atob(result.content);
+                    const content = decodeURIComponent(escape(atob(result.content)));
                     const githubData = JSON.parse(content);
                     dataSha = result.sha;
                     
