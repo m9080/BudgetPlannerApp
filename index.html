@@ -390,8 +390,9 @@
         .file-upload { border: 2px dashed var(--light); border-radius: 12px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.2s; }
         .file-upload:hover { border-color: var(--primary); background: rgba(99, 102, 241, 0.05); }
         .file-upload input { display: none; }
-        .file-preview { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
-        .file-thumb { width: 60px; height: 60px; border-radius: 8px; object-fit: cover; border: 2px solid var(--light); }
+        .file-preview { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; align-items: center; }
+        .file-thumb { width: 60px; height: 60px; border-radius: 8px; object-fit: cover; border: 2px solid var(--light); transition: transform 0.2s; }
+        .file-thumb:hover { transform: scale(1.05); cursor: pointer; }
         
         /* Right Side Quick Menu (Swipe/Click to reveal) */
         .right-menu-btn { position: fixed; right: 0; bottom: 90px; width: 45px; height: 45px; background: var(--primary); border: none; border-radius: 50% 0 0 50%; color: white; font-size: 20px; cursor: pointer; z-index: 150; display: flex; align-items: center; justify-content: center; box-shadow: -3px 0 15px rgba(0,0,0,0.2); transition: all 0.3s; }
@@ -3111,7 +3112,13 @@
             if (sourceId) selectedSourceId = sourceId;
             document.getElementById('transDate').value = new Date().toISOString().split('T')[0];
             document.getElementById('transTime').value = new Date().toTimeString().slice(0, 5);
-            uploadedFiles = []; document.getElementById('filePreview').innerHTML = '';
+            uploadedFiles = []; 
+            renderFilePreview();
+            // Remove edit mode
+            delete document.getElementById('transType').dataset.editId;
+            document.getElementById('modalTitle').textContent = type === 'income' ? '💰 Add Money Received' : '💸 Add Expense';
+            const form = document.getElementById('transactionForm');
+            form.onsubmit = null;
             openModal('addModal');
         }
 
@@ -3128,14 +3135,46 @@
         }
 
         function handleFileUpload(input) {
-            uploadedFiles = [];
             const preview = document.getElementById('filePreview');
-            preview.innerHTML = '';
             for (let file of input.files) {
                 const reader = new FileReader();
-                reader.onload = (e) => { uploadedFiles.push(e.target.result); preview.innerHTML += `<img src="${e.target.result}" class="file-thumb">`; };
+                reader.onload = (e) => { 
+                    uploadedFiles.push(e.target.result); 
+                    renderFilePreview(); 
+                };
                 reader.readAsDataURL(file);
             }
+        }
+        
+        function renderFilePreview() {
+            const preview = document.getElementById('filePreview');
+            if (uploadedFiles.length === 0) {
+                preview.innerHTML = '';
+                return;
+            }
+            preview.innerHTML = uploadedFiles.map((file, index) => `
+                <div style="position: relative; display: inline-block; margin: 5px;">
+                    <img src="${file}" class="file-thumb" onclick="showAttachmentPreview(${index})" style="cursor: pointer;">
+                    <button onclick="removeAttachment(${index})" style="position: absolute; top: -8px; right: -8px; width: 20px; height: 20px; background: var(--danger); color: white; border: none; border-radius: 50%; cursor: pointer; font-size: 12px; line-height: 20px; padding: 0;">×</button>
+                </div>
+            `).join('') + `<div style="clear: both;"></div><p style="font-size: 11px; color: var(--gray); margin-top: 5px;">${uploadedFiles.length} file(s) attached</p>`;
+        }
+        
+        function removeAttachment(index) {
+            uploadedFiles.splice(index, 1);
+            renderFilePreview();
+        }
+        
+        function showAttachmentPreview(index) {
+            const file = uploadedFiles[index];
+            document.getElementById('attachmentContent').innerHTML = `
+                <img src="${file}" style="max-width: 100%; max-height: 80vh; border-radius: 10px;">
+                <br><br>
+                <div style="text-align: center;">
+                    <a href="${file}" download="receipt_${Date.now()}.jpg" class="btn btn-primary" style="text-decoration: none; display: inline-block;">Download</a>
+                </div>
+            `;
+            document.getElementById('attachmentPreview').classList.add('show');
         }
 
         function renderCategoryGrid() {
@@ -3250,7 +3289,7 @@
                 date: document.getElementById('transDate').value, time: document.getElementById('transTime').value,
                 note: document.getElementById('transNote').value, accountId: selectedAccountId, sourceId: selectedSourceId,
                 walletId: selectedWalletId, walletName: wallet?.name || 'Cash', walletIcon: wallet?.icon || '💵',
-                attachment: uploadedFiles[0] || null,
+                attachments: uploadedFiles.length > 0 ? [...uploadedFiles] : [],
                 budgetPlanId: selectedBudgetPlanForTrans,
                 budgetPlanName: budgetPlan?.name || null,
                 budgetPlanFrequency: budgetPlan?.frequency || null,
@@ -3273,16 +3312,59 @@
             showToast('Transaction saved!');
         });
 
-        // Show Attachment
+        // Show Attachment(s)
+        let currentAttachmentIndex = 0;
+        let currentAttachments = [];
+        
         function showAttachment(id) {
             const t = data.transactions.find(tr => tr.id == id);
-            if (t && t.attachment) {
-                document.getElementById('attachmentContent').innerHTML = `<img src="${t.attachment}"><br><p style="color: white; text-align: center; margin-top: 15px;">${t.category} - ${formatCurrency(t.amount)}</p><a href="${t.attachment}" download="receipt_${id}.jpg" class="btn btn-primary" style="display: block; text-align: center; margin-top: 15px; text-decoration: none;">Download</a>`;
-                document.getElementById('attachmentPreview').classList.add('show');
+            if (!t) return;
+            
+            currentAttachments = t.attachments || (t.attachment ? [t.attachment] : []);
+            if (currentAttachments.length === 0) {
+                showToast('No attachments');
+                return;
             }
+            
+            currentAttachmentIndex = 0;
+            displayCurrentAttachment();
+            document.getElementById('attachmentPreview').classList.add('show');
         }
-
-        function closeAttachmentPreview() { document.getElementById('attachmentPreview').classList.remove('show'); }
+        
+        function displayCurrentAttachment() {
+            const file = currentAttachments[currentAttachmentIndex];
+            const isImage = file && file.startsWith('data:image');
+            document.getElementById('attachmentContent').innerHTML = `
+                <div style="text-align: center;">
+                    ${isImage ? `<img src="${file}" style="max-width: 100%; max-height: 70vh; border-radius: 10px;">` : `<div style="color: white; padding: 50px;">📄 PDF/Document</div>`}
+                    <br><br>
+                    <p style="color: white; font-size: 14px;">${currentAttachmentIndex + 1} of ${currentAttachments.length}</p>
+                    <div style="margin: 15px 0;">
+                        ${currentAttachments.length > 1 ? `
+                            <button onclick="prevAttachment()" style="padding: 10px 20px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; margin: 0 5px;">◀ Prev</button>
+                            <button onclick="nextAttachment()" style="padding: 10px 20px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; margin: 0 5px;">Next ▶</button>
+                        ` : ''}
+                    </div>
+                    <a href="${file}" download="receipt_${Date.now()}" class="btn btn-primary" style="text-decoration: none; display: inline-block;">Download</a>
+                </div>
+            `;
+        }
+        
+        function prevAttachment() {
+            currentAttachmentIndex = (currentAttachmentIndex - 1 + currentAttachments.length) % currentAttachments.length;
+            displayCurrentAttachment();
+        }
+        
+        function nextAttachment() {
+            currentAttachmentIndex = (currentAttachmentIndex + 1) % currentAttachments.length;
+            displayCurrentAttachment();
+        }
+        
+        function closeAttachmentPreview() { 
+            document.getElementById('attachmentPreview').classList.remove('show'); 
+            currentAttachments = [];
+            currentAttachmentIndex = 0;
+        }
 
         // Icon Arrays
         const expenseIcons = ['🛒', '🍔', '🚗', '🏠', '💡', '📱', '👕', '🎬', '💊', '📚', '✈️', '🎮', '🏋️', '💇', '🐕', '🎁', '☕', '🍺', '🎵', '📦', '🛠️', '👶', '📝', '🎓', '💼', '🚕', '⛽', '🏥', '🎭', '🌿', '📺', '🧹', '🔧', '🎯', '⚽', '📷', '🛏️', '💳', '📄', '🎨', '🔌', '🧊', '🍳', '🧺', '🪥', '🧴', '👟', '🎒', '📌', '🔑', '💊'];
@@ -4342,8 +4424,8 @@
                         <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 5px;">
                             <div class="trans-amount ${t.type}" style="font-size: 15px;">${t.type === 'income' ? '+' : '-'}${formatCurrency(t.amount)}</div>
                             <div style="font-size: 10px; color: var(--gray);">${formatDate(t.date)}</div>
-                            <div style="display: flex; gap: 5px;">
-                                ${t.attachment ? `<span class="attachment-badge" onclick="event.stopPropagation(); showAttachment('${t.id}')">📎</span>` : ''}
+                            <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                                ${(t.attachments?.length > 0 || t.attachment) ? `<span class="attachment-badge" onclick="event.stopPropagation(); showAttachment('${t.id}')" style="background: #dcfce7; color: #16a34a; padding: 3px 8px; border-radius: 10px; font-size: 10px; cursor: pointer;">📎 ${t.attachments?.length || 1}</span>` : ''}
                                 <button onclick="event.stopPropagation(); editTransaction(${t.id})" style="padding: 4px 10px; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 10px;">Edit</button>
                                 <button onclick="event.stopPropagation(); deleteTransaction(${t.id})" style="padding: 4px 10px; background: var(--danger); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 10px;">Del</button>
                             </div>
@@ -4383,14 +4465,15 @@
             });
             if (selectedCategories.length === 0) selectedCategories = [0];
             
-            // Set attachment if exists
-            if (t.attachment) {
+            // Set attachments if exists
+            if (t.attachments && t.attachments.length > 0) {
+                uploadedFiles = [...t.attachments];
+            } else if (t.attachment) {
                 uploadedFiles = [t.attachment];
-                document.getElementById('filePreview').innerHTML = `<img src="${t.attachment}" class="file-thumb">`;
             } else {
                 uploadedFiles = [];
-                document.getElementById('filePreview').innerHTML = '';
             }
+            renderFilePreview();
             
             // Store edit transaction id for update
             document.getElementById('transType').dataset.editId = t.id;
@@ -4442,7 +4525,7 @@
                     walletId: selectedWalletId,
                     walletName: wallet?.name || 'Cash',
                     walletIcon: wallet?.icon || '💵',
-                    attachment: uploadedFiles[0] || data.transactions[transactionIndex].attachment || null,
+                    attachments: uploadedFiles.length > 0 ? [...uploadedFiles] : data.transactions[transactionIndex]?.attachments || [],
                     budgetCategoryId: selectedBudgetCatId,
                     budgetCategoryName: budgetCat?.name || null,
                     purchaseSourceId: selectedPurchaseSourceId,
