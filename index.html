@@ -3015,18 +3015,34 @@
 
         function updateDashboard() {
             const now = new Date(), currentMonth = now.getMonth(), currentYear = now.getFullYear();
-            let totalBalance = 0, monthlyIncome = 0, monthlyExpense = 0;
+            let totalIncome = 0, totalExpense = 0;
+            
+            // Calculate total from all transactions (income - expense = available balance)
+            data.transactions.forEach(t => {
+                if (t.type === 'income') totalIncome += t.amount || 0;
+                else totalExpense += t.amount || 0;
+            });
+            
+            // Calculate each account's current balance
+            let totalInitialBalance = 0;
             data.accounts.forEach(acc => {
                 const initBal = acc.initialBalance || acc.balance || 0;
                 let fromTrans = 0;
-                data.transactions.forEach(t => { if (t.accountId === acc.id) { if (t.type === 'income') fromTrans += t.amount; else fromTrans -= t.amount; } });
+                data.transactions.forEach(t => { 
+                    if (t.accountId === acc.id) { 
+                        if (t.type === 'income') fromTrans += t.amount || 0; 
+                        else fromTrans -= t.amount || 0; 
+                    } 
+                });
                 acc.currentBalance = initBal + fromTrans;
-                totalBalance += acc.currentBalance;
+                totalInitialBalance += initBal;
             });
-            data.transactions.forEach(t => { const d = new Date(t.date); if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) { if (t.type === 'income') monthlyIncome += t.amount; else monthlyExpense += t.amount; } });
-            setEl('totalBalance', formatCurrency(totalBalance));
-            setEl('monthlyIncome', formatCurrency(monthlyIncome));
-            setEl('monthlyExpense', formatCurrency(monthlyExpense));
+            
+            const totalCurrentBalance = totalIncome - totalExpense + totalInitialBalance;
+            
+            setEl('totalBalance', formatCurrency(totalCurrentBalance));
+            setEl('monthlyIncome', formatCurrency(totalIncome));
+            setEl('monthlyExpense', formatCurrency(totalExpense));
             setEl('totalAccountsCount', data.accounts.length);
             setEl('totalTransactionsCount', data.transactions.length);
             setEl('accountChips', '<div style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px;">' + data.accounts.map(acc => `<div style="background: rgba(255,255,255,0.2); padding: 6px 10px; border-radius: 12px; font-size: 10px; white-space: nowrap; flex-shrink: 0;">${acc.name}: ${formatCurrency(acc.currentBalance || 0)}</div>`).join('') + '</div>', 'html');
@@ -3040,25 +3056,51 @@
             if (!container) return;
             container.innerHTML = data.accounts.map(acc => {
                 const initBal = acc.initialBalance || acc.balance || 0;
-                let fromTrans = 0;
                 let income = 0, expense = 0;
                 data.transactions.forEach(t => {
                     if (t.accountId === acc.id) {
-                        if (t.type === 'income') { income += t.amount; fromTrans += t.amount; }
-                        else { expense += t.amount; fromTrans -= t.amount; }
+                        if (t.type === 'income') { income += t.amount || 0; }
+                        else { expense += t.amount || 0; }
                     }
                 });
+                const fromTrans = income - expense;
                 const currentBal = initBal + fromTrans;
-                return `<div class="account-card" onclick="openAccountModal(${acc.id})" style="cursor: pointer;">
-                    <div class="account-card-header">
-                        <span class="account-icon">${getAccountIcon(acc.type)}</span>
-                        <span class="account-type">${acc.type}</span>
+                const netChange = income - expense;
+                
+                return `<div class="account-card" style="padding: 15px; background: white; border-radius: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px;">${getAccountIcon(acc.type)}</div>
+                            <div>
+                                <div style="font-weight: 600; font-size: 14px;">${acc.name}</div>
+                                <div style="font-size: 10px; color: var(--gray);">${acc.type}</div>
+                            </div>
+                        </div>
+                        <button onclick="openAccountModal(${acc.id})" style="padding: 5px 10px; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 11px;">Edit</button>
                     </div>
-                    <div class="account-name">${acc.name}</div>
-                    <div class="account-balance" style="font-size: 18px; color: var(--primary);">${formatCurrency(currentBal)}</div>
-                    <div style="font-size: 10px; color: var(--gray); margin-top: 5px;">
-                        <span style="color: var(--success);">+${formatCurrency(income)}</span> | 
-                        <span style="color: var(--danger);">-${formatCurrency(expense)}</span>
+                    
+                    <div style="background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%); padding: 12px; border-radius: 12px; margin-bottom: 10px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span style="font-size: 11px; color: var(--gray);">Initial Balance</span>
+                            <span style="font-size: 12px; font-weight: 600;">${formatCurrency(initBal)}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span style="font-size: 11px; color: var(--gray);">Income</span>
+                            <span style="font-size: 12px; font-weight: 600; color: var(--success);">+${formatCurrency(income)}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span style="font-size: 11px; color: var(--gray);">Expense</span>
+                            <span style="font-size: 12px; font-weight: 600; color: var(--danger);">-${formatCurrency(expense)}</span>
+                        </div>
+                        <div style="height: 1px; background: #ddd; margin: 8px 0;"></div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="font-size: 12px; font-weight: 600;">Available Balance</span>
+                            <span style="font-size: 14px; font-weight: 700; color: ${currentBal >= 0 ? 'var(--success)' : 'var(--danger)'};">${formatCurrency(currentBal)}</span>
+                        </div>
+                    </div>
+                    
+                    <div style="font-size: 10px; color: var(--gray); text-align: center;">
+                        ${netChange >= 0 ? '📈 Net Gain: +' + formatCurrency(netChange) : '📉 Net Loss: -' + formatCurrency(Math.abs(netChange))}
                     </div>
                 </div>`;
             }).join('');
