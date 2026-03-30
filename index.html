@@ -3205,7 +3205,9 @@
 
         function closeAttachmentPreview() { document.getElementById('attachmentPreview').classList.remove('show'); }
 
-        // Source Modal
+        // Icon Arrays
+        const expenseIcons = ['🛒', '🍔', '🚗', '🏠', '💡', '📱', '👕', '🎬', '💊', '📚', '✈️', '🎮', '🏋️', '💇', '🐕', '🎁', '☕', '🍺', '🎵', '📦', '🛠️', '👶', '📝', '🎓', '💼', '🚕', '⛽', '🏥', '🎭', '🌿', '📺', '🧹', '🔧', '🎯', '⚽', '📷', '🛏️', '💳', '📄', '🎨', '🔌', '🧊', '🍳', '🧺', '🪥', '🧴', '👟', '🎒', '📌', '🔑', '💊'];
+        const incomeIcons = ['💰', '💵', '🏦', '📈', '🎁', '💎', '👨‍👩‍👧', '🏧', '💸', '🎊', '🏆', '🎯', '💼', '📊', '🧾', '🏅', '💳', '📑', '💹', '🔖', '🎐', '🪙', '📥', '💷', '💴', '💶', '📤'];
         const sourceIcons = ['👩', '👨', '👦', '👧', '👴', '👵', '👨‍👩‍👧', '💼', '👩‍💼', '👨‍💼', '🧑‍🎓', '👩‍🎓', '🧑‍🍳', '👨‍🍳', '👩‍🔧', '👨‍🔧', '👩‍🏫', '👨‍🏫', '👩‍⚕️', '👨‍⚕️', '👩‍✈️', '👨‍✈️', '🧔', '👱', '🦰', '🦱', '🦸', '🦹', '🧙', '🧚', '🧛', '🧜', '🧝', '🧞', '👸', '🤴', '🦁', '🐯', '🦊', '🐻', '🐼', '🐨', '🐰', '🦄', '🐲', '🦋', '🐝', '🐞', '🌸', '🌺', '🌻', '🌹', '🍀'];
         function openSourceModal() { document.getElementById('sourceForm').reset(); currentSourceIcon = '👩'; renderSourceIconSelector(); openModal('sourceModal'); }
         function renderSourceIconSelector() { document.getElementById('sourceIconSelector').innerHTML = sourceIcons.map(icon => `<div class="source-option ${currentSourceIcon === icon ? 'selected' : ''}" onclick="selectSourceIcon('${icon}')" style="font-size: 22px; padding: 10px 12px;">${icon}</div>`).join(''); }
@@ -3477,18 +3479,6 @@
         };
         
         // ============================================================
-        // HOW TO ADD NEW ICON CATEGORY:
-        // 1. Add new key in ALL_ICONS above
-        // 2. Add array of emojis
-        // 3. Create reference: const myNewIcons = ALL_ICONS.myNewKey;
-        // ============================================================
-        
-        // Use these in your code (references to ALL_ICONS)
-        const expenseIcons = ALL_ICONS.expense;
-        const incomeIcons = ALL_ICONS.income;
-        const accountTypeIcons = ALL_ICONS.accountType;
-        const budgetCatIcons = ALL_ICONS.budget;
-        // ============ END ALL ICONS ============
 
         function openCategoryModal() { 
             currentExpenseIcon = '🛒';
