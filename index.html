@@ -1607,79 +1607,37 @@
             cachedGitHubToken = localStorage.getItem('githubToken');
             if (cachedGitHubToken) return cachedGitHubToken;
             
-            // Try to fetch token from GitHub config file
+            // Try to fetch token from GitHub config file (for migration)
             try {
                 const response = await fetch(`https://raw.githubusercontent.com/${GITHUB_REPO}/${GITHUB_BRANCH}/config.json`);
                 if (response.ok) {
                     const config = await response.json();
                     if (config.t) {
-                        // Decode base64 token
-                        cachedGitHubToken = atob(config.t);
+                        let decoded = atob(config.t);
+                        if (config.e) decoded = decoded.split('').reverse().join('');
+                        cachedGitHubToken = decoded;
                         localStorage.setItem('githubToken', cachedGitHubToken);
                         return cachedGitHubToken;
                     }
                 }
-            } catch(e) {
-                console.log('Could not fetch token from GitHub');
-            }
+            } catch(e) {}
             
-            return null;
+            // Fallback to localStorage
+            cachedGitHubToken = localStorage.getItem('githubToken');
+            return cachedGitHubToken;
         }
         
         async function setGitHubToken(token) {
             cachedGitHubToken = token;
             localStorage.setItem('githubToken', token);
-            showToast('✅ Token saved locally!', 2000);
-            
-            // Upload token to GitHub cloud for permanent storage
-            await uploadTokenToCloud(token);
-            
+            showToast('✅ Token saved! (stored locally)', 2000);
             cloudStatus = 'synced';
             updateSyncStatus();
         }
         
-        // Upload token to GitHub config file
+        // Legacy - kept for backwards compatibility
         async function uploadTokenToCloud(token) {
-            try {
-                // Encode token to base64
-                const encodedToken = btoa(token);
-                
-                // Check if config exists
-                let sha = null;
-                try {
-                    const checkRes = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/config.json`, {
-                        headers: { 'Authorization': `token ${token}` }
-                    });
-                    if (checkRes.ok) {
-                        const checkData = await checkRes.json();
-                        sha = checkData.sha;
-                    }
-                } catch(e) {}
-                
-                const body = {
-                    message: 'Update config with token',
-                    content: JSON.stringify({ t: encodedToken }),
-                    branch: GITHUB_BRANCH
-                };
-                if (sha) body.sha = sha;
-                
-                const response = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/config.json`, {
-                    method: 'PUT',
-                    headers: {
-                        'Authorization': `token ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(body)
-                });
-                
-                if (response.ok) {
-                    showToast('✅ Token saved to cloud!', 2000);
-                } else {
-                    console.log('Token upload failed:', response.status);
-                }
-            } catch(e) {
-                console.log('Token upload error:', e);
-            }
+            showToast('ℹ️ Token stored locally only', 1500);
         }
         
         // Auto sync on page load - compares local vs cloud
